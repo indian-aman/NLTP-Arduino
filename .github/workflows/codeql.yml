@@ -1,0 +1,52 @@
+name: CodeQL C99 SAST
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  schedule:
+    - cron: '20 2 * * 1'
+
+permissions: read-all
+
+jobs:
+  analyze:
+    name: Analyze (c-cpp)
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        with:
+          languages: c-cpp
+          queries: security-extended
+
+      - name: Compile NLTP C99 Core, KAT Suite & Fuzz Target for CodeQL
+        run: |
+          mkdir -p build-codeql
+          gcc -std=c99 -Wall -Wextra -Wpedantic -Werror -O2 -g \
+              -DNLTP_NO_MALLOC -Isrc \
+              tests/test_kat_vectors.c src/nltp_core.c src/nltp_net.c src/nltp_sha256.c \
+              -o build-codeql/nltp_kat_full
+          gcc -std=c99 -Wall -Wextra -Wpedantic -Werror -O2 -g \
+              -DNLTP_TX_ONLY=1 -DNLTP_NO_MALLOC -Isrc \
+              tests/test_kat_vectors.c src/nltp_core.c src/nltp_net.c src/nltp_sha256.c \
+              -o build-codeql/nltp_kat_txonly
+          rm -rf build-codeql
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        with:
+          category: "/language:c-cpp"
