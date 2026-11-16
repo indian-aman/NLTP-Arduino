@@ -1,9 +1,10 @@
 # NLTP v1.6.0 — Arduino, PlatformIO & ESP-IDF C99 SDK
 
 [![Tier-1 Compliance CI](https://github.com/indian-aman/NLTP-Arduino/actions/workflows/tier1-compliance.yml/badge.svg)](https://github.com/indian-aman/NLTP-Arduino/actions/workflows/tier1-compliance.yml)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/16811/badge)](https://www.bestpractices.dev/projects/16811)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/indian-aman/NLTP-Arduino/badge)](https://scorecard.dev/viewer/?uri=github.com/indian-aman/NLTP-Arduino)
-[![IETF Spec](https://img.shields.io/badge/IETF%20Draft-draft--bains--nltp--00-005A9C.svg)](spec/draft-bains-nltp-00.txt)
-[![ESP-IDF](https://img.shields.io/badge/ESP--IDF-%3E%3D5.0.0-E7352C.svg)](idf_component.yml)
+[![IETF Datatracker](https://img.shields.io/badge/IETF%20Datatracker-draft--bains--nltp--00-005A9C.svg)](https://datatracker.ietf.org/doc/draft-bains-nltp/)
+[![ESP Component Registry](https://components.espressif.com/components/indian-aman/nltp/badge.svg)](https://components.espressif.com/components/indian-aman/nltp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 **Loss-Healing X25519 Forward-Secret UDP & ESP-NOW v1/v2 Transport (`4.76 KB` TX-Only MCU Profile)**
@@ -27,7 +28,7 @@ Every commit is continuously verified against formal IETF/NIST cryptographic vec
 
 | Artifact / Assurance Gate | Specification & Verification Scope |
 | :--- | :--- |
-| **Formal IETF Internet-Draft** | [`spec/draft-bains-nltp-00.txt`](spec/draft-bains-nltp-00.txt) ([XML](spec/draft-bains-nltp-00.xml) · [HTML](spec/draft-bains-nltp-00.html)) — complete byte-level RFCXML v3 wire, handshake, FEC, and LZ4 specification |
+| **Formal IETF Internet-Draft** | [`datatracker.ietf.org/doc/draft-bains-nltp/`](https://datatracker.ietf.org/doc/draft-bains-nltp/) ([TXT](spec/draft-bains-nltp-00.txt) · [XML](spec/draft-bains-nltp-00.xml) · [HTML](spec/draft-bains-nltp-00.html)) — active IETF Individual Internet-Draft specifying wire headers, handshake, Cauchy FEC, and LZ4 |
 | **NIST & IETF Cryptographic KATs** | [`tests/test_kat_vectors.c`](tests/test_kat_vectors.c) — `1,668` checks covering **RFC 7748** (X25519 + low-order point rejection), **RFC 8439** (ChaCha20-Poly1305 AEAD), **RFC 4231** (HMAC-SHA256), **NIST FIPS 180-4** (SHA-256), **RFC 6479** (`512`-bit anti-replay), and `30%`-loss encrypted loopback under `ASan`/`UBSan` |
 | **Continuous `libFuzzer` Harness** | [`fuzz/fuzz_nltp_rx.c`](fuzz/fuzz_nltp_rx.c) — `500,000` mutated frames per CI run (`clang -fsanitize=fuzzer,address,undefined`) across plaintext/encrypted parsers & in-place LZ4 decompression |
 | **MISRA C:2012 Compliance** | [`docs/MISRA_C_2012_COMPLIANCE.md`](docs/MISRA_C_2012_COMPLIANCE.md) — strict ISO C99 (`-Wpedantic -Werror`), zero heap (`-DNLTP_NO_MALLOC`), zero floats, acyclic call graph, `cppcheck` + MISRA C:2012 CI audit |
@@ -39,8 +40,9 @@ Every commit is continuously verified against formal IETF/NIST cryptographic vec
 ## Installation (`Arduino`, `PlatformIO`, `ESP-IDF`, `CMake`)
 
 ### 1. Espressif ESP-IDF Component Manager (`v5.0+`)
+Published on the official [ESP Component Registry (`indian-aman/nltp`)](https://components.espressif.com/components/indian-aman/nltp):
 ```bash
-idf.py add-dependency "nltp^1.6.0"
+idf.py add-dependency "indian-aman/nltp^1.6.0"
 ```
 Or reference this repository directly in `idf_component.yml`:
 ```yaml
