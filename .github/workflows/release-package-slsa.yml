@@ -1,0 +1,110 @@
+name: Release Packaging, GHCR Container & SLSA Provenance
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'GitHub Release tag to attach signed SLSA provenance and publish GHCR package'
+        required: true
+        default: 'v1.6.0'
+        type: string
+
+permissions: read-all
+
+jobs:
+  package-and-attest:
+    name: Build Static KAT Container, Package & Sign SLSA Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+      attestations: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Resolve and validate release tag
+        id: meta
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_TAG: ${{ inputs.release_tag }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          if [ "${EVENT_NAME}" = "workflow_dispatch" ]; then
+            TAG="${INPUT_TAG}"
+          else
+            TAG="${REF_NAME}"
+          fi
+          if [[ ! "${TAG}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid release tag format: ${TAG}" >&2
+            exit 1
+          fi
+          echo "tag=${TAG}" >> "${GITHUB_OUTPUT}"
+
+      - name: Build static C99 KAT verifier & release tarball
+        env:
+          TAG: ${{ steps.meta.outputs.tag }}
+        run: |
+          mkdir -p build dist
+          gcc -static -std=c99 -Wall -Wextra -Wpedantic -Werror -O2 \
+              -DNLTP_NO_MALLOC -Isrc \
+              tests/test_kat_vectors.c src/nltp_core.c src/nltp_net.c src/nltp_sha256.c \
+              -o build/nltp_kat
+          ./build/nltp_kat
+          tar -czf "dist/nltp-c99-${TAG}.tar.gz" \
+              src examples CMakeLists.txt idf_component.yml \
+              library.json library.properties keywords.txt \
+              README.md SECURITY.md CONTRIBUTING.md LICENSE \
+              sbom.spdx.json sbom.cdx.json \
+              spec/draft-bains-nltp-00.txt spec/draft-bains-nltp-00.xml
+
+      - name: Log in to GitHub Container Registry (GHCR)
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push FROM-scratch KAT verifier container
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/indian-aman/nltp-kat:${{ steps.meta.outputs.tag }}
+            ghcr.io/indian-aman/nltp-kat:latest
+
+      - name: Generate Sigstore OIDC SLSA Build Provenance
+        id: attest
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: |
+            dist/nltp-c99-*.tar.gz
+            sbom.spdx.json
+            sbom.cdx.json
+
+      - name: Attach tarball, SBOMs, and SLSA .intoto.jsonl provenance to GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.meta.outputs.tag }}
+          BUNDLE_PATH: ${{ steps.attest.outputs.bundle-path }}
+        run: |
+          cp "${BUNDLE_PATH}" "dist/nltp-c99-${TAG}.intoto.jsonl"
+          cp "${BUNDLE_PATH}" "dist/nltp-c99-${TAG}.sigstore.json"
+          if ! gh release view "${TAG}" >/dev/null 2>&1; then
+            gh release create "${TAG}" --title "NLTP ${TAG}" --generate-notes
+          fi
+          gh release upload "${TAG}" \
+            "dist/nltp-c99-${TAG}.tar.gz" \
+            "dist/nltp-c99-${TAG}.intoto.jsonl" \
+            "dist/nltp-c99-${TAG}.sigstore.json" \
+            sbom.spdx.json \
+            sbom.cdx.json \
+            --clobber
