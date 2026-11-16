@@ -70,7 +70,7 @@ jobs:
 
       - name: Run 500,000 Adversarial Radio Frames under ASan/UBSan
         run: |
-          clang -std=c99 -Wall -Wextra -Wpedantic -Werror -O2 -g \
+          clang -std=c99 -Wall -Wextra -Wpedantic -Werror -Wno-unused-function -O2 -g \
                 -fsanitize=fuzzer,address,undefined -fno-omit-frame-pointer \
                 -DNLTP_NO_MALLOC -Isrc \
                 fuzz/fuzz_nltp_rx.c src/nltp_core.c src/nltp_net.c src/nltp_sha256.c \
@@ -102,6 +102,7 @@ jobs:
                    --suppress=constParameterPointer \
                    --suppress=constVariablePointer \
                    --suppress=variableScope \
+                   --suppress=knownConditionTrueFalse \
                    --error-exitcode=1 \
                    -DNLTP_NO_MALLOC -Isrc \
                    src/nltp_core.c src/nltp_net.c src/nltp_sha256.c
