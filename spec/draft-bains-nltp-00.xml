@@ -1,0 +1,948 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rfc xmlns:xi="http://www.w3.org/2001/XInclude"
+     version="3"
+     ipr="trust200902"
+     docName="draft-bains-nltp-00"
+     category="info"
+     submissionType="independent"
+     sortRefs="true"
+     symRefs="true"
+     tocInclude="true"
+     tocDepth="3">
+
+  <front>
+    <title abbrev="NLTP v1">NeckLink Transport Protocol (NLTP): Loss-Healing Authenticated Telemetry and Reflex Transport for Constrained Networks</title>
+    <author initials="A. S." surname="Bains" fullname="Amandeep Singh Bains">
+      <address>
+        <email>indianaman1.10.97@gmail.com</email>
+        <uri>https://github.com/indian-aman/NLTP-Arduino</uri>
+      </address>
+    </author>
+    <date year="2026" month="November" day="16"/>
+    <keyword>FEC</keyword>
+    <keyword>Cauchy</keyword>
+    <keyword>ChaCha20-Poly1305</keyword>
+    <keyword>X25519</keyword>
+    <keyword>LZ4</keyword>
+    <keyword>ESP-NOW</keyword>
+    <keyword>UDP</keyword>
+    <keyword>Constrained Networks</keyword>
+
+    <abstract>
+      <t>
+        This document specifies the NeckLink Transport Protocol (NLTP), a
+        lightweight, loss-healing, forward-secret transport protocol designed
+        for microcontrollers, autonomous sensors, and edge gateways operating
+        over lossy wireless links (including IEEE 802.11 vendor action frames
+        such as ESP-NOW v1 and v2) and Carrier-Grade NAT (CGNAT) UDP paths.
+        NLTP combines systematic Galois Field GF(2^8) algebraic Cauchy
+        erasure coding with a single-round-trip (1-RTT) X25519 and pre-shared
+        key (PSK) session handshake, ChaCha20-Poly1305 authenticated
+        encryption with associated data (AEAD), a 512-packet sliding
+        anti-replay window, optional pre-encryption zero-heap LZ4 block
+        compression, integer delivery-rate pacing, and a confirmed
+        out-of-line reflex channel that eliminates head-of-line (HOL)
+        blocking for urgent actuator commands. The entire protocol executes
+        with zero dynamic heap allocation and zero floating-point operations,
+        fitting within 4,760 octets of static RAM in transmit-plus-reflex
+        sensor configurations.
+      </t>
+    </abstract>
+  </front>
+
+  <middle>
+    <section anchor="intro">
+      <name>Introduction</name>
+      <t>
+        Field telemetry, marine buoys, industrial actuators, and wireless
+        microcontroller meshes routinely operate over links suffering 10% to
+        35% packet loss, asymmetric Carrier-Grade NATs (CGNATs), and strict
+        Maximum Transmission Unit (MTU) ceilings such as 250 octets on legacy
+        ESP-NOW v1 or 1,470 octets on ESP-NOW v2. Traditional stream
+        transports stall on retransmission timeouts when bursts of packets
+        are lost, suffer head-of-line (HOL) blocking when urgent control
+        messages queue behind bulk transfers, and exceed the SRAM and Flash
+        budgets of 32-bit microcontrollers lacking floating-point units or
+        heap allocators.
+      </t>
+      <t>
+        The NeckLink Transport Protocol (NLTP) addresses these constraints
+        through six integrated mechanisms:
+      </t>
+      <ol>
+        <li>
+          <strong>Byte-Identical L2/L4 Framing:</strong> Every NLTP datagram
+          begins with the two-octet ASCII magic prefix <tt>"NL"</tt>
+          (<tt>0x4E 0x4C</tt>) and traverses UDP sockets, zero-knowledge UDP
+          relays, and raw IEEE 802.11 vendor action frames without protocol
+          translation.
+        </li>
+        <li>
+          <strong>1-RTT X25519+PSK Forward Secrecy:</strong> Encrypted
+          endpoints establish per-session directional keys using ephemeral
+          <xref target="RFC7748"/> Diffie-Hellman key agreement authenticated
+          by a 256-bit pre-shared key via <xref target="RFC2104"/>
+          HMAC-SHA-256, sealing frames with <xref target="RFC8439"/>
+          ChaCha20-Poly1305.
+        </li>
+        <li>
+          <strong>512-Packet Sliding Anti-Replay Window:</strong> Each
+          session tracks 64-bit packet sequence numbers using an
+          <xref target="RFC6479"/> 8-word bitmap verified prior to plaintext
+          decryption.
+        </li>
+        <li>
+          <strong>Systematic GF(2^8) Cauchy Erasure Coding:</strong> Bulk
+          transfers are partitioned into generations of up to <tt>k = 8</tt>
+          systematic data shards accompanied by proactive and reactive Cauchy
+          parity shards over <tt>GF(2^8)</tt>, healing lost packets in flight
+          and verifying the reassembled object with <xref target="FIPS180-4"/>
+          SHA-256.
+        </li>
+        <li>
+          <strong>Zero-Heap LZ4 Block Compression:</strong> Repetitive
+          structured payloads are compressed prior to encryption and FEC
+          slicing using raw <xref target="LZ4"/> blocks and decompressed
+          in-place at the receiver without heap allocation.
+        </li>
+        <li>
+          <strong>Out-of-Line Reliable Reflex Channel:</strong> Time-critical
+          commands up to 192 octets bypass bulk stream queues and rate
+          pacers, achieving zero HOL blocking with dedicated acknowledgements.
+        </li>
+      </ol>
+    </section>
+
+    <section anchor="conventions">
+      <name>Conventions and Terminology</name>
+      <t>
+        The key words "<bcp14>MUST</bcp14>", "<bcp14>MUST NOT</bcp14>",
+        "<bcp14>REQUIRED</bcp14>", "<bcp14>SHALL</bcp14>",
+        "<bcp14>SHALL NOT</bcp14>", "<bcp14>SHOULD</bcp14>",
+        "<bcp14>SHOULD NOT</bcp14>", "<bcp14>RECOMMENDED</bcp14>",
+        "<bcp14>NOT RECOMMENDED</bcp14>", "<bcp14>MAY</bcp14>", and
+        "<bcp14>OPTIONAL</bcp14>" in this document are to be interpreted as
+        described in BCP 14 <xref target="RFC2119"/> <xref target="RFC8174"/>
+        when, and only when, they appear in all capitals, as shown here.
+      </t>
+      <t>
+        Unless explicitly noted otherwise (such as network-order attributes
+        in <xref target="RFC5389"/> STUN messages), all multi-octet integer
+        fields in NLTP headers, nonces, and payloads are encoded in unsigned
+        <strong>little-endian</strong> byte order, denoted <tt>LE16(x)</tt>,
+        <tt>LE32(x)</tt>, and <tt>LE64(x)</tt>. Concatenation of byte
+        sequences is denoted by <tt>||</tt>, bitwise exclusive-OR by
+        <tt>^</tt>, and bitwise OR by <tt>|</tt>.
+      </t>
+    </section>
+
+    <section anchor="framing">
+      <name>Wire Framing Specification</name>
+
+      <section anchor="common-prefix">
+        <name>Common Frame Prefix and Flags</name>
+        <t>
+          Every NLTP datagram starts with a 4-octet prefix:
+        </t>
+        <ul>
+          <li>
+            <strong>Magic (<tt>pkt[0..1]</tt>):</strong> Fixed ASCII octets
+            <tt>0x4E</tt> (<tt>'N'</tt>) and <tt>0x4C</tt> (<tt>'L'</tt>).
+            Receivers <bcp14>MUST</bcp14> silently discard frames that do not
+            begin with <tt>0x4E 0x4C</tt>.
+          </li>
+          <li>
+            <strong>Version and Type (<tt>pkt[2]</tt>):</strong> The upper
+            4-bit nibble encodes the wire framing version
+            (<tt>version = pkt[2] &gt;&gt; 4</tt>), and the lower 4-bit
+            nibble encodes the packet type
+            (<tt>pkt_type = pkt[2] &amp; 0x0F</tt>). Unencrypted frames use
+            <tt>NLTP_VERSION = 1</tt>. Encrypted frames (including handshake
+            frames) use <tt>NLTP_SESSION_VERSION = 2</tt>.
+          </li>
+          <li>
+            <strong>Flags (<tt>pkt[3]</tt>):</strong> Bit 7 (<tt>0x80</tt>,
+            <tt>NLTP_FLAG_ENCRYPTED</tt>) selects between the 16-octet
+            unencrypted header (<tt>0</tt>) and the 20-octet encrypted AEAD
+            header (<tt>1</tt>). Bits 6..0 (<tt>0x7F</tt>) carry
+            type-specific flags: <tt>0x01</tt> indicates metadata
+            receipt confirmation in <tt>PROPRIOCEPTIVE_ACK</tt>,
+            <tt>0x02</tt> marks extended ACK rate trailers and reliable
+            reflex frames, and <tt>0x40</tt> (<tt>FLAG_LZ4</tt>) is reserved
+            for inline LZ4 stream signaling.
+          </li>
+        </ul>
+      </section>
+
+      <section anchor="unencrypted-header">
+        <name>Unencrypted Frame Format (Wire Version 1)</name>
+        <t>
+          When <tt>NLTP_FLAG_ENCRYPTED</tt> (<tt>0x80</tt>) is clear, the
+          frame consists of a 16-octet header followed by <tt>N &gt;= 0</tt>
+          payload octets:
+        </t>
+        <figure anchor="fig-plain-hdr">
+          <name>NLTP Unencrypted 16-Octet Header</name>
+          <artwork type="ascii-art"><![CDATA[
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|   Magic 'N'   |   Magic 'L'   | Ver=1 | Type  |0|    Flags    |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                        conn_id (LE32)                         |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                         crc32 (LE32)                          |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                         ts_ms (LE32)                          |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                     Payload (0..N octets)                   ...
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+]]></artwork>
+        </figure>
+        <dl>
+          <dt><tt>conn_id</tt> (4 octets, LE32):</dt>
+          <dd>
+            Sender endpoint connection identifier. Endpoints set bit 0
+            (<tt>conn_id | 1</tt>) on initialization to guarantee a non-zero
+            identifier.
+          </dd>
+          <dt><tt>crc32</tt> (4 octets, LE32):</dt>
+          <dd>
+            <xref target="IEEE8023"/> CRC-32 (reflected polynomial
+            <tt>0xEDB88320</tt>, initial value <tt>0xFFFFFFFF</tt>, final XOR
+            <tt>0xFFFFFFFF</tt>) computed over the 16-octet header with
+            octets <tt>8..11</tt> set to <tt>0x00000000</tt>, immediately
+            followed by <tt>payload[0..N-1]</tt>. Unencrypted endpoints
+            <bcp14>MUST</bcp14> discard any frame whose computed CRC-32 does
+            not match <tt>crc32</tt>.
+          </dd>
+          <dt><tt>ts_ms</tt> (4 octets, LE32):</dt>
+          <dd>
+            Sender monotonic millisecond clock modulo 2^32 at transmission.
+          </dd>
+        </dl>
+      </section>
+
+      <section anchor="encrypted-header">
+        <name>Encrypted AEAD Frame Format (Wire Version 2)</name>
+        <t>
+          When an endpoint is configured with a pre-shared key, all
+          unencrypted frames and all frames with <tt>version != 2</tt>
+          <bcp14>MUST</bcp14> be rejected prior to state mutation. An
+          authenticated encrypted frame consists of a 20-octet cleartext
+          Additional Authenticated Data (AAD) header, <tt>N &gt;= 0</tt>
+          octets of ChaCha20 ciphertext, and a 16-octet Poly1305 tag
+          (minimum wire length 36 octets):
+        </t>
+        <figure anchor="fig-enc-hdr">
+          <name>NLTP Encrypted Version-2 AEAD Frame</name>
+          <artwork type="ascii-art"><![CDATA[
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|   Magic 'N'   |   Magic 'L'   | Ver=2 | Type  |1|    Flags    |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                        conn_id (LE32)                         |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
++                         seq64 (LE64)                          +
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                         ts_ms (LE32)                          |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                   Ciphertext (0..N octets)                  ...
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
++                      Poly1305 Tag (16 B)                      +
+|                                                               |
++                                                               +
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+]]></artwork>
+        </figure>
+        <t>
+          AEAD sealing and opening follow <xref target="RFC8439"/> Section
+          2.8 with the following deterministic parameters:
+        </t>
+        <ul>
+          <li>
+            <strong>96-bit Nonce (<tt>12</tt> octets):</strong>
+            <tt>nonce12 = LE32(conn_id) || LE64(seq64)</tt>.
+          </li>
+          <li>
+            <strong>AAD (<tt>20</tt> octets):</strong> The exact cleartext
+            header <tt>pkt[0..19]</tt>. Modifying any header bit (including
+            <tt>version_type</tt>, <tt>flags</tt>, <tt>conn_id</tt>,
+            <tt>seq64</tt>, or <tt>ts_ms</tt>) invalidates the Poly1305 tag.
+          </li>
+          <li>
+            <strong>Keystream Generation:</strong> Block counter <tt>0</tt>
+            generates the 32-octet one-time Poly1305 key; plaintext
+            encryption starts at ChaCha20 block counter <tt>1</tt>.
+          </li>
+          <li>
+            <strong>Authenticate-Before-Decrypt Requirement:</strong> An
+            unpacking endpoint <bcp14>MUST</bcp14> check replay eligibility,
+            compute the expected 16-octet Poly1305 tag over the AAD and
+            ciphertext, and compare it against <tt>pkt[20+N..35+N]</tt> in
+            constant time <strong>before</strong> updating the anti-replay
+            bitmap or writing any decrypted bytes to memory.
+          </li>
+        </ul>
+      </section>
+
+      <section anchor="packet-types">
+        <name>Packet Type Registry</name>
+        <t>
+          <xref target="tab-ptypes"/> defines all NLTP packet types encoded
+          in the lower 4 bits of <tt>pkt[2]</tt>.
+        </t>
+        <table anchor="tab-ptypes">
+          <name>NLTP Packet Types</name>
+          <thead>
+            <tr>
+              <th>Hex</th>
+              <th>Symbolic Name</th>
+              <th>Summary</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><tt>0x01</tt></td>
+              <td><tt>PT_DATA_SHARD</tt></td>
+              <td>Systematic data shard (<tt>idx &lt; k</tt>)</td>
+            </tr>
+            <tr>
+              <td><tt>0x02</tt></td>
+              <td><tt>PT_CRYPTIC_PARITY</tt></td>
+              <td>GF(2^8) Cauchy repair shard (<tt>idx &gt;= k</tt>)</td>
+            </tr>
+            <tr>
+              <td><tt>0x03</tt></td>
+              <td><tt>PT_PROPRIOCEPTIVE_ACK</tt></td>
+              <td>Cumulative base, per-generation DOF need, and rate trailer</td>
+            </tr>
+            <tr>
+              <td><tt>0x04</tt></td>
+              <td><tt>PT_STREAM_META</tt></td>
+              <td>UTF-8 JSON stream descriptor (size, gens, SHA-256, LZ4)</td>
+            </tr>
+            <tr>
+              <td><tt>0x05</tt></td>
+              <td><tt>PT_STREAM_FIN_ACK</tt></td>
+              <td>End-of-stream completion and SHA-256 verification status</td>
+            </tr>
+            <tr>
+              <td><tt>0x06</tt></td>
+              <td><tt>PT_REFLEX_MSG</tt></td>
+              <td>Out-of-line reliable low-latency reflex message</td>
+            </tr>
+            <tr>
+              <td><tt>0x07</tt></td>
+              <td><tt>PT_NEURAL_STATE</tt></td>
+              <td>Unreliable high-rate state telemetry vector</td>
+            </tr>
+            <tr>
+              <td><tt>0x08</tt></td>
+              <td><tt>PT_PING</tt></td>
+              <td>4-octet timestamp probe for RTT, keepalive, and NAT punch</td>
+            </tr>
+            <tr>
+              <td><tt>0x09</tt></td>
+              <td><tt>PT_PONG</tt></td>
+              <td>4-octet echo reply to <tt>PT_PING</tt></td>
+            </tr>
+            <tr>
+              <td><tt>0x0A</tt></td>
+              <td><tt>PT_REFLEX_ACK</tt></td>
+              <td>4-octet acknowledgement of <tt>PT_REFLEX_MSG</tt></td>
+            </tr>
+            <tr>
+              <td><tt>0x0B</tt></td>
+              <td><tt>PT_HELLO</tt></td>
+              <td>Initiator 1-RTT X25519+PSK handshake message (84 B wire)</td>
+            </tr>
+            <tr>
+              <td><tt>0x0C</tt></td>
+              <td><tt>PT_HELLO_ACK</tt></td>
+              <td>Responder 1-RTT X25519+PSK handshake reply (100 B wire)</td>
+            </tr>
+            <tr>
+              <td><tt>0x0D</tt></td>
+              <td><tt>PT_NO_SESSION</tt></td>
+              <td>Rate-limited restart hint echoing peer <tt>conn_id</tt>/<tt>seq64</tt></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section anchor="shard-header">
+        <name>12-Octet Shard Header and Control Payloads</name>
+        <t>
+          Payloads of <tt>PT_DATA_SHARD</tt> (<tt>0x01</tt>) and
+          <tt>PT_CRYPTIC_PARITY</tt> (<tt>0x02</tt>) start with a 12-octet
+          shard header followed by <tt>row_width</tt> octets:
+        </t>
+        <figure anchor="fig-shard-hdr">
+          <name>NLTP 12-Octet Shard Header</name>
+          <artwork type="ascii-art"><![CDATA[
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                       stream_id (LE32)                        |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                        gen_id (LE32)                          |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|       k       |      idx      |        row_width (LE16)       |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                Shard Row (row_width octets)                 ...
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+]]></artwork>
+        </figure>
+        <t>
+          Each systematic row of width <tt>row_width = 2 + shard_bytes</tt>
+          (default <tt>shard_bytes = 960</tt>, yielding
+          <tt>row_width = 962</tt> and a 1,010-octet encrypted packet; or
+          <tt>shard_bytes = 192</tt>, yielding a 242-octet encrypted packet
+          for 250-octet ESP-NOW v1 links) prefixes its data slice with
+          <tt>LE16(chunk_len)</tt> and zero-pads any trailing slack prior to
+          Cauchy encoding. Receivers <bcp14>MUST</bcp14> reject shard frames
+          with <tt>k == 0</tt>, <tt>k &gt; 8</tt>, <tt>row_width &lt; 2</tt>,
+          or <tt>idx &gt;= 208</tt>.
+        </t>
+        <t>
+          Control packet payloads are structured as follows:
+        </t>
+        <ul>
+          <li>
+            <strong><tt>PT_PROPRIOCEPTIVE_ACK</tt> (<tt>0x03</tt>):</strong>
+            14-octet fixed prefix <tt>LE32(stream_id) || LE32(base_gen) ||
+            LE32(ack_echo_ts) || u8(loss_q8) || u8(n_rep)</tt>, followed by
+            <tt>n_rep</tt> (0..16) 4-octet repair entries
+            <tt>LE16(gen_id - base_gen) || u8(have) || u8(need)</tt>, plus an
+            8-octet rate trailer <tt>LE32(bytes_rcvd) ||
+            LE32(arrival_kbps)</tt>.
+          </li>
+          <li>
+            <strong><tt>PT_STREAM_META</tt> (<tt>0x04</tt>):</strong> UTF-8
+            JSON object containing <tt>stream_id</tt>, <tt>kind</tt>
+            (<tt>"file"</tt>), <tt>filename</tt>, <tt>total_bytes</tt> (wire
+            byte count), <tt>total_gens</tt>, <tt>sha256</tt> (64 lowercase
+            hexadecimal digits of the uncompressed <xref target="FIPS180-4"/>
+            SHA-256 digest), and optional <tt>"codec":"lz4"</tt> plus
+            <tt>"raw_bytes"</tt>.
+          </li>
+          <li>
+            <strong><tt>PT_STREAM_FIN_ACK</tt> (<tt>0x05</tt>):</strong>
+            5 octets <tt>LE32(stream_id) || u8(sha_ok)</tt>, where
+            <tt>sha_ok == 1</tt> confirms exact SHA-256 verification.
+          </li>
+          <li>
+            <strong><tt>PT_PING</tt> (<tt>0x08</tt>) and <tt>PT_PONG</tt>
+            (<tt>0x09</tt>):</strong> 4 octets <tt>LE32(probe_ts_ms)</tt>.
+          </li>
+        </ul>
+      </section>
+    </section>
+
+    <section anchor="handshake">
+      <name>1-RTT X25519+PSK Forward-Secret Handshake</name>
+
+      <section anchor="psk-derivation">
+        <name>Long-Term Pre-Shared Key Normalization</name>
+        <t>
+          Both peers share a 32-octet long-term symmetric key <tt>K</tt>.
+          When configured from a human-readable string <tt>psk</tt>,
+          leading and trailing ASCII whitespace (<tt>' '</tt>, <tt>'\t'</tt>,
+          <tt>'\r'</tt>, <tt>'\n'</tt>) is stripped. If the trimmed string
+          has length 43 or 44 characters and decodes via URL-safe Base64 to
+          exactly 32 octets, those 32 octets form <tt>K</tt>; otherwise:
+        </t>
+        <artwork type="ascii-art"><![CDATA[
+K = SHA-256("NLTP-v1-PASSPHRASE:" || trim(psk))
+]]></artwork>
+      </section>
+
+      <section anchor="handshake-exchange">
+        <name>Handshake Messages and Key Schedule</name>
+        <t>
+          Before sealing any session data frame, an initiator (<tt>'i'</tt>)
+          with connection ID <tt>cid_i</tt> generates a fresh 16-octet random
+          nonce <tt>n_i</tt> and a 32-octet random scalar <tt>sk_i</tt>,
+          computes <tt>pk_i = X25519(sk_i, 9)</tt> per
+          <xref target="RFC7748"/>, and transmits <tt>PT_HELLO</tt>
+          (<tt>0x0B</tt>) sealed under <tt>K</tt> at wire version <tt>2</tt>
+          using a random odd 64-bit sequence number
+          (<tt>seq64 = rand64() | 1</tt>):
+        </t>
+        <figure anchor="fig-handshake">
+          <name>1-RTT X25519+PSK Handshake Exchange</name>
+          <artwork type="ascii-art"><![CDATA[
+Initiator (cid_i)                                  Responder (cid_r)
+-----------------                                  -----------------
+sk_i, n_i <-- CSPRNG
+pk_i = X25519(sk_i, 9)
+                   PT_HELLO (48 B pt / 84 B wire)
+                   AEAD_K(n_i || pk_i)
+                 --------------------------------->
+                                              sk_r, n_r <-- CSPRNG
+                                              pk_r = X25519(sk_r, 9)
+                                              dh = X25519(sk_r, pk_i)
+                                              verify dh != 0^32
+                                              derive (k_i2r, k_r2i)
+                                              wipe(sk_r, dh)
+                 PT_HELLO_ACK (64 B pt / 100 B wire)
+                 AEAD_K(n_i || n_r || pk_r)
+                 <---------------------------------
+verify n_i matches pending HELLO
+dh = X25519(sk_i, pk_r)
+verify dh != 0^32
+derive (k_i2r, k_r2i)
+wipe(sk_i, dh)
+                   Session Frames (Ver=2, seq64=1..)
+                   AEAD_{k_i2r}(...) / AEAD_{k_r2i}(...)
+                 <================================>
+]]></artwork>
+        </figure>
+        <t>
+          Both peers <bcp14>MUST</bcp14> check whether the 32-octet X25519
+          shared secret <tt>dh</tt> equals the all-zero byte string
+          (<tt>0x00^32</tt>) as specified in <xref target="RFC7748"/> Section
+          6.1, and <bcp14>MUST</bcp14> abort handshake processing if so.
+          Directional 256-bit AEAD keys are derived via
+          <xref target="RFC2104"/> HMAC-SHA-256 over an 87-octet transcript:
+        </t>
+        <artwork type="ascii-art"><![CDATA[
+prk   = HMAC-SHA256(K, "NLTP-1.5-X25519" || dh || n_i || n_r
+                       || LE32(cid_i) || LE32(cid_r))
+k_i2r = HMAC-SHA256(prk, "i2r")
+k_r2i = HMAC-SHA256(prk, "r2i")
+]]></artwork>
+        <t>
+          The initiator transmits with <tt>k_tx = k_i2r</tt> and receives
+          with <tt>k_rx = k_r2i</tt>; the responder transmits with
+          <tt>k_tx = k_r2i</tt> and receives with <tt>k_rx = k_i2r</tt>.
+          Ephemeral scalars (<tt>sk_i</tt>, <tt>sk_r</tt>), <tt>dh</tt>, and
+          <tt>prk</tt> <bcp14>MUST</bcp14> be zeroized immediately upon key
+          derivation.
+        </t>
+      </section>
+
+      <section anchor="tiebreak-and-recovery">
+        <name>Simultaneous Open, Session Staging, and Restart Recovery</name>
+        <ul>
+          <li>
+            <strong>Simultaneous Open Tie-Breaker:</strong> If an endpoint
+            with an unanswered pending <tt>HELLO</tt> (nonce
+            <tt>pend_n_i</tt>) receives a valid <tt>PT_HELLO</tt> carrying
+            nonce <tt>n_i</tt>, it compares the 16-octet nonces
+            lexicographically. If <tt>pend_n_i &lt; n_i</tt>, its own
+            <tt>HELLO</tt> wins and the incoming <tt>HELLO</tt> is ignored;
+            otherwise it cancels its pending <tt>HELLO</tt>, wipes
+            <tt>pend_sk_i</tt>, and responds as <tt>'r'</tt>.
+          </li>
+          <li>
+            <strong>Candidate Session Slot (<tt>SESS_TAKEOVER_MS =
+            1000</tt>):</strong> Each endpoint maintains two session slots:
+            live <tt>sess[0]</tt> and candidate <tt>sess[1]</tt>. If
+            <tt>sess[0]</tt> has received authenticated traffic within the
+            preceding 1,000 ms, a newly answered <tt>PT_HELLO</tt> is
+            installed into <tt>sess[1]</tt> and promoted to <tt>sess[0]</tt>
+            only after a subsequent data/control frame authenticates under
+            <tt>sess[1].k_rx</tt>. Retransmitted identical <tt>PT_HELLO</tt>
+            frames replay the cached 100-octet <tt>HELLO_ACK</tt>.
+          </li>
+          <li>
+            <strong><tt>PT_NO_SESSION</tt> (<tt>0x0D</tt>) Restart Hint:</strong>
+            When an encrypted endpoint receives a version-2 data frame for an
+            unknown <tt>peer_cid</tt> (e.g., after an MCU reboot), it
+            <bcp14>MAY</bcp14> emit a 36-octet unauthenticated
+            <tt>PT_NO_SESSION</tt> hint at most once per
+            <tt>HINT_INTERVAL_MS = 250</tt> ms containing a 20-octet header
+            (<tt>seq64 = 0</tt>) and 16-octet payload
+            <tt>LE32(peer_cid) || LE64(peer_seq) || LE32(0)</tt>. The
+            recipient initiates a fresh <tt>PT_HELLO</tt> only if it has an
+            active session, no handshake is already pending, the echoed
+            <tt>peer_cid</tt> equals its own <tt>conn_id</tt>, and
+            <tt>0 &lt; peer_seq &lt;= sess[0].tx_seq</tt>.
+          </li>
+        </ul>
+      </section>
+    </section>
+
+    <section anchor="anti-replay">
+      <name>RFC 6479 512-Packet Sliding Anti-Replay Window</name>
+      <t>
+        Each established session direction initializes <tt>tx_seq = 0</tt>
+        (pre-incremented to <tt>1</tt> on the first frame) and a receive
+        replay window <tt>(highest_seq = 0, bitmap[0..7] = 0)</tt> modeled on
+        <xref target="RFC6479"/> covering <tt>NLTP_REPLAY_WINDOW_BITS =
+        512</tt> sequence numbers.
+      </t>
+      <ol>
+        <li>
+          Sequence number <tt>seq64 == 0</tt> <bcp14>MUST</bcp14> always be
+          rejected.
+        </li>
+        <li>
+          If <tt>seq64 &gt; highest_seq</tt>, the packet is eligible. Upon
+          AEAD tag verification, the 512-bit bitmap shifts left by
+          <tt>seq64 - highest_seq</tt> bits (clearing all words if the shift
+          is <tt>&gt;= 512</tt>), sets bit <tt>0</tt>, and updates
+          <tt>highest_seq = seq64</tt>.
+        </li>
+        <li>
+          If <tt>seq64 &lt;= highest_seq</tt>, let
+          <tt>diff = highest_seq - seq64</tt>. If <tt>diff &gt;= 512</tt>, or
+          if bit <tt>(diff &amp; 63)</tt> of <tt>bitmap[diff &gt;&gt; 6]</tt>
+          is already <tt>1</tt>, the packet <bcp14>MUST</bcp14> be rejected
+          as stale or replayed. Otherwise, upon AEAD tag verification, that
+          bit is set to <tt>1</tt>.
+        </li>
+      </ol>
+    </section>
+
+    <section anchor="cauchy-fec">
+      <name>Systematic GF(2^8) Algebraic Cauchy Erasure Coding</name>
+      <t>
+        Bulk transfers slice the wire buffer into generations of up to
+        <tt>NLTP_DEFAULT_GEN_K = 8</tt> systematic rows. Arithmetic operates
+        over the binary extension field <tt>GF(2^8)</tt> modulo the
+        irreducible polynomial <tt>x^8 + x^4 + x^3 + x^2 + 1</tt>
+        (<tt>0x11D</tt>). Multiplicative inversion computes
+        <tt>inv(a) = a^254</tt> in <tt>GF(2^8)</tt> with <tt>inv(0) = 0</tt>.
+      </t>
+      <t>
+        For a generation of <tt>k</tt> (<tt>2 &lt;= k &lt;= 8</tt>)
+        systematic rows <tt>S[0..k-1]</tt> and parity offset
+        <tt>p_off = idx - k</tt> in <tt>0..191</tt>, the Cauchy encoding
+        vector <tt>C[p_off, 0..k-1]</tt> uses disjoint element sets:
+      </t>
+      <artwork type="ascii-art"><![CDATA[
+x_r = 64 + (p_off % 192)          /* x_r in [64..255] */
+y_c = c & 0x3F                    /* y_c in [0..63]   */
+C[p_off, c] = inv_GF256(x_r ^ y_c)
+ParityRow[p_off] = sum_{c=0}^{k-1} GF256_mul(C[p_off, c], S[c])
+]]></artwork>
+      <t>
+        Because <tt>x_r &gt;= 64</tt> and <tt>y_c &lt; 64</tt>,
+        <tt>(x_r ^ y_c) &gt;= 64 &gt; 0</tt> holds for all <tt>(r, c)</tt>,
+        guaranteeing every square submatrix of the systematic generator
+        matrix <tt>[I_k | C^T]</tt> is invertible (Maximum Distance Separable
+        property). Any <tt>k</tt> distinct shards (systematic or parity)
+        suffice to reconstruct the generation via incremental Gauss-Jordan
+        elimination. When <tt>k == 1</tt>, <tt>ParityRow[p_off]</tt> equals
+        <tt>S[0]</tt> verbatim.
+      </t>
+    </section>
+
+    <section anchor="lz4">
+      <name>Pre-Encryption LZ4 Block Compression</name>
+      <t>
+        When sending compressible payloads (<tt>len &gt;= 32</tt> octets), an
+        endpoint <bcp14>MAY</bcp14> compress the raw payload using the
+        standard <xref target="LZ4"/> raw block format prior to generation
+        slicing and AEAD encryption. If the compressed output is strictly
+        smaller than the input, <tt>PT_STREAM_META</tt> includes
+        <tt>"codec":"lz4"</tt> and <tt>"raw_bytes":len</tt>, while
+        <tt>"total_bytes"</tt> carries the compressed byte count and
+        <tt>"sha256"</tt> carries the SHA-256 digest of the original
+        uncompressed payload.
+      </t>
+      <t>
+        Constrained receivers perform zero-heap overlap-safe in-place
+        decompression inside a single receive buffer <tt>buf[0..buf_cap-1]</tt>
+        whenever <tt>buf_cap &gt;= raw_bytes + (comp_len &gt;&gt; 8) + 32</tt>
+        by shifting the reassembled compressed block to
+        <tt>buf[buf_cap - comp_len .. buf_cap - 1]</tt> and enforcing
+        <tt>dp + match_len &lt;= sp</tt> and <tt>offset &lt;= dp</tt> before
+        every literal and match copy.
+      </t>
+    </section>
+
+    <section anchor="reflex-and-nat">
+      <name>Out-of-Line Reliable Reflex Channel and NAT Traversal</name>
+      <t>
+        Urgent actuator or telemetry-trigger commands use
+        <tt>PT_REFLEX_MSG</tt> (<tt>0x06</tt>, <tt>flags = 0x02</tt>) with
+        payload <tt>LE32(reflex_seq) || LE16(msg_len) ||
+        msg[0..msg_len-1]</tt> (<tt>0 &lt;= msg_len &lt;= 192</tt>). Reflex
+        frames bypass the bulk congestion window and rate pacer, transmit
+        twice back-to-back on session readiness for immediate loss
+        resilience, and retransmit with 1.5x exponential backoff (45..250 ms
+        up to a 10,000 ms deadline) until acknowledged by a 4-octet
+        <tt>PT_REFLEX_ACK</tt> (<tt>0x0A</tt>, <tt>flags = 0x02</tt>)
+        carrying <tt>LE32(reflex_seq)</tt>. Receivers deduplicate incoming
+        reflexes using a bounded <tt>(peer_cid, reflex_seq)</tt> ring buffer.
+      </t>
+      <t>
+        For endpoints behind symmetric CGNATs that cannot complete direct
+        <xref target="RFC5389"/> STUN hole punching, NLTP defines an optional
+        19-octet zero-knowledge UDP relay envelope:
+        <tt>"NR" || u8(cmd) || room_tag[0..15] || inner_nltp_pkt</tt>, where
+        <tt>cmd</tt> is <tt>0x01</tt> (<tt>DATA</tt>), <tt>0x02</tt>
+        (<tt>REGISTER</tt>), or <tt>0x03</tt> (<tt>REG_ACK</tt>), and
+        <tt>room_tag = SHA-256("NLTP-RELAY-ROOM:" || trim(room))[0..15]</tt>.
+        Because the inner NLTP v2 frame remains end-to-end encrypted and
+        authenticated under session keys derived from <tt>K</tt>, the relay
+        hub learns neither room names nor payload contents.
+      </t>
+    </section>
+
+    <section anchor="iana">
+      <name>IANA Considerations</name>
+      <t>
+        This document has no IANA actions. NLTP operates over
+        application-configured UDP ports and IEEE 802.11 vendor-specific
+        action frames identified by the <tt>"NL"</tt> (<tt>0x4E 0x4C</tt>)
+        magic prefix.
+      </t>
+    </section>
+
+    <section anchor="security">
+      <name>Security Considerations</name>
+      <ul>
+        <li>
+          <strong>Forward Secrecy and Pre-Shared Key Entropy:</strong>
+          Compromise of the long-term PSK <tt>K</tt> after a session has
+          terminated does not reveal past session keys (<tt>k_i2r</tt>,
+          <tt>k_r2i</tt>) because ephemeral X25519 scalars (<tt>sk_i</tt>,
+          <tt>sk_r</tt>) and Diffie-Hellman outputs (<tt>dh</tt>) are wiped
+          immediately after derivation. However, a passive attacker who
+          already possesses <tt>K</tt> at handshake time can impersonate a
+          peer; deployments <bcp14>SHOULD</bcp14> provision high-entropy
+          256-bit random keys rather than low-entropy passphrases.
+        </li>
+        <li>
+          <strong>AEAD Nonce Uniqueness:</strong> Session data frames use
+          strictly monotonic 64-bit counters (<tt>seq64 = 1, 2, ...</tt>)
+          under fresh, direction-separated 256-bit keys (<tt>k_i2r !=
+          k_r2i</tt>), preventing nonce reuse across up to 2^64 - 1 frames
+          per session. Handshake frames (<tt>PT_HELLO</tt>,
+          <tt>PT_HELLO_ACK</tt>) sealed directly under <tt>K</tt> combine a
+          random 31-bit <tt>conn_id | 1</tt> with a fresh 63-bit random
+          <tt>seq64 | 1</tt>, providing 94 bits of CSPRNG nonce entropy per
+          handshake frame; endpoints <bcp14>MUST</bcp14> refuse encrypted
+          operation if no cryptographic random source is available.
+        </li>
+        <li>
+          <strong>Low-Order Curve25519 Points:</strong> Mandatory rejection
+          of all-zero X25519 outputs (<xref target="RFC7748"/> Section 6.1)
+          prevents small-subgroup confinement and invalid-curve key-Mismatch
+          attacks.
+        </li>
+        <li>
+          <strong>Replay, Window Poisoning, and Address Spoofing:</strong>
+          Two-phase <xref target="RFC6479"/> verification ensures forged
+          frames never advance <tt>highest_seq</tt>, and transport adapters
+          update peer network/MAC addresses only after <tt>valid_rx</tt>
+          increments on cryptographic authentication.
+        </li>
+        <li>
+          <strong>Compression Oracle Considerations:</strong> Because LZ4
+          shrinks repetitive byte patterns prior to encryption, applications
+          <bcp14>MUST NOT</bcp14> concatenate attacker-chosen inputs with
+          sensitive secrets inside the same compressed stream if ciphertext
+          lengths are observable on the wire.
+        </li>
+        <li>
+          <strong>Decompression Bomb and Memory Bounds:</strong> Receivers
+          validate <tt>dp + match_len &lt;= sp</tt>,
+          <tt>dp + match_len &lt;= expected_raw_len</tt>, and end-to-end
+          SHA-256 digests strictly after AEAD authentication, preventing
+          unauthenticated memory exhaustion or buffer overflows on zero-heap
+          microcontrollers.
+        </li>
+      </ul>
+    </section>
+  </middle>
+
+  <back>
+    <references>
+      <name>References</name>
+
+      <references>
+        <name>Normative References</name>
+
+        <reference anchor="RFC2104" target="https://www.rfc-editor.org/info/rfc2104">
+          <front>
+            <title>HMAC: Keyed-Hashing for Message Authentication</title>
+            <author initials="H." surname="Krawczyk" fullname="H. Krawczyk"/>
+            <author initials="M." surname="Bellare" fullname="M. Bellare"/>
+            <author initials="R." surname="Canetti" fullname="R. Canetti"/>
+            <date year="1997" month="February"/>
+          </front>
+          <seriesInfo name="RFC" value="2104"/>
+          <seriesInfo name="DOI" value="10.17487/RFC2104"/>
+        </reference>
+
+        <reference anchor="RFC2119" target="https://www.rfc-editor.org/info/rfc2119">
+          <front>
+            <title>Key words for use in RFCs to Indicate Requirement Levels</title>
+            <author initials="S." surname="Bradner" fullname="S. Bradner"/>
+            <date year="1997" month="March"/>
+          </front>
+          <seriesInfo name="BCP" value="14"/>
+          <seriesInfo name="RFC" value="2119"/>
+          <seriesInfo name="DOI" value="10.17487/RFC2119"/>
+        </reference>
+
+        <reference anchor="RFC6479" target="https://www.rfc-editor.org/info/rfc6479">
+          <front>
+            <title>IPsec Anti-Replay Algorithm without Bit Shifting</title>
+            <author initials="X." surname="Zhang" fullname="X. Zhang"/>
+            <author initials="T." surname="Tsou" fullname="T. Tsou"/>
+            <date year="2012" month="January"/>
+          </front>
+          <seriesInfo name="RFC" value="6479"/>
+          <seriesInfo name="DOI" value="10.17487/RFC6479"/>
+        </reference>
+
+        <reference anchor="RFC7748" target="https://www.rfc-editor.org/info/rfc7748">
+          <front>
+            <title>Elliptic Curves for Security</title>
+            <author initials="A." surname="Langley" fullname="A. Langley"/>
+            <author initials="M." surname="Hamburg" fullname="M. Hamburg"/>
+            <author initials="S." surname="Turner" fullname="S. Turner"/>
+            <date year="2016" month="January"/>
+          </front>
+          <seriesInfo name="RFC" value="7748"/>
+          <seriesInfo name="DOI" value="10.17487/RFC7748"/>
+        </reference>
+
+        <reference anchor="RFC8174" target="https://www.rfc-editor.org/info/rfc8174">
+          <front>
+            <title>Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words</title>
+            <author initials="B." surname="Leiba" fullname="B. Leiba"/>
+            <date year="2017" month="May"/>
+          </front>
+          <seriesInfo name="BCP" value="14"/>
+          <seriesInfo name="RFC" value="8174"/>
+          <seriesInfo name="DOI" value="10.17487/RFC8174"/>
+        </reference>
+
+        <reference anchor="RFC8439" target="https://www.rfc-editor.org/info/rfc8439">
+          <front>
+            <title>ChaCha20 and Poly1305 for IETF Protocols</title>
+            <author initials="Y." surname="Nir" fullname="Y. Nir"/>
+            <author initials="A." surname="Langley" fullname="A. Langley"/>
+            <date year="2018" month="June"/>
+          </front>
+          <seriesInfo name="RFC" value="8439"/>
+          <seriesInfo name="DOI" value="10.17487/RFC8439"/>
+        </reference>
+
+        <reference anchor="FIPS180-4" target="https://doi.org/10.6028/NIST.FIPS.180-4">
+          <front>
+            <title>Secure Hash Standard (SHS)</title>
+            <author>
+              <organization>National Institute of Standards and Technology</organization>
+            </author>
+            <date year="2015" month="August"/>
+          </front>
+          <seriesInfo name="FIPS PUB" value="180-4"/>
+          <seriesInfo name="DOI" value="10.6028/NIST.FIPS.180-4"/>
+        </reference>
+      </references>
+
+      <references>
+        <name>Informative References</name>
+
+        <reference anchor="RFC5389" target="https://www.rfc-editor.org/info/rfc5389">
+          <front>
+            <title>Session Traversal Utilities for NAT (STUN)</title>
+            <author initials="J." surname="Rosenberg" fullname="J. Rosenberg"/>
+            <author initials="R." surname="Mahy" fullname="R. Mahy"/>
+            <author initials="P." surname="Matthews" fullname="P. Matthews"/>
+            <author initials="D." surname="Wing" fullname="D. Wing"/>
+            <date year="2008" month="October"/>
+          </front>
+          <seriesInfo name="RFC" value="5389"/>
+          <seriesInfo name="DOI" value="10.17487/RFC5389"/>
+        </reference>
+
+        <reference anchor="IEEE8023">
+          <front>
+            <title>IEEE Standard for Ethernet</title>
+            <author>
+              <organization>IEEE</organization>
+            </author>
+            <date year="2022" month="July"/>
+          </front>
+          <seriesInfo name="IEEE Std" value="802.3-2022"/>
+        </reference>
+
+        <reference anchor="LZ4" target="https://github.com/lz4/lz4/blob/dev/doc/lz4_Block_format.md">
+          <front>
+            <title>LZ4 Block Format Description</title>
+            <author initials="Y." surname="Collet" fullname="Yann Collet"/>
+            <date year="2019" month="March"/>
+          </front>
+        </reference>
+      </references>
+    </references>
+
+    <section anchor="test-vectors">
+      <name>Cryptographic and Wire Test Vectors</name>
+
+      <section anchor="tv-kdf">
+        <name>NLTP 1.5 X25519+PSK Session Key Derivation Vector</name>
+        <t>
+          Given the <xref target="RFC7748"/> Section 6.1 shared secret
+          <tt>dh</tt>, 32-octet PSK <tt>K = 1011..2f</tt>, initiator nonce
+          <tt>n_i = 0102..10</tt>, responder nonce <tt>n_r = 2122..30</tt>,
+          <tt>cid_i = 0x11223345</tt>, and <tt>cid_r = 0x55667789</tt>:
+        </t>
+        <artwork type="ascii-art"><![CDATA[
+K     = 101112131415161718191a1b1c1d1e1f
+        202122232425262728292a2b2c2d2e2f
+dh    = 4a5d9d5ba4ce2de1728e3bf480350f25
+        e07e21c947d19e3376f09b3c1e161742
+n_i   = 0102030405060708090a0b0c0d0e0f10
+n_r   = 2122232425262728292a2b2c2d2e2f30
+cid_i = 0x11223345  (LE32: 45332211)
+cid_r = 0x55667789  (LE32: 89776655)
+
+prk   = 6306595ae52f5df950e3ebdaa2d464fe
+        047051fa0e38b54075e378f83c7c17e2
+k_i2r = 9b2408a16c17371feff864059f2c4f55
+        6d85d56f88592e61fe23f906e45f91fa
+k_r2i = 99494825a27dd99ddb4f57a236d4b620
+        85656f0beedd06ec3255837b35f625ec
+]]></artwork>
+      </section>
+
+      <section anchor="tv-enc-ping">
+        <name>Encrypted Version-2 PT_PING Wire Frame (40 Octets)</name>
+        <t>
+          Sealing a 4-octet <tt>PT_PING</tt> (<tt>0x08</tt>) payload
+          <tt>LE32(1000) = e8030000</tt> under <tt>k_i2r</tt> above with
+          <tt>version = 2</tt>, <tt>flags = 0x80</tt>,
+          <tt>conn_id = 0x11223345</tt>, <tt>seq64 = 1</tt>, and
+          <tt>ts_ms = 1000</tt> yields:
+        </t>
+        <artwork type="ascii-art"><![CDATA[
+AAD Header (20 B): 4e4c2880 45332211 0100000000000000 e8030000
+Nonce (12 B)     : 45332211 0100000000000000
+Ciphertext (4 B) : 9dc0f833
+Poly1305 Tag(16B): 4ee50dfb b2a72a34 76367815 995fb029
+Full Wire (40 B) : 4e4c2880453322110100000000000000e8030000
+                   9dc0f8334ee50dfbb2a72a3476367815995fb029
+]]></artwork>
+      </section>
+
+      <section anchor="tv-cauchy">
+        <name>GF(2^8) Cauchy Repair Row Vectors (k = 8)</name>
+        <t>
+          For <tt>k = 8</tt> systematic columns over <tt>0x11D</tt>, the
+          first two repair rows (<tt>parity_offset = 0</tt> and
+          <tt>parity_offset = 1</tt>) are:
+        </t>
+        <artwork type="ascii-art"><![CDATA[
+parity_offset = 0 (x_0 = 64): 36 5f f8 d5 92 4e a6 04
+parity_offset = 1 (x_1 = 65): 5f 36 d5 f8 4e 92 04 a6
+]]></artwork>
+      </section>
+    </section>
+  </back>
+</rfc>

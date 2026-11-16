@@ -1,0 +1,36 @@
+# Build & CMake artifacts
+build/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+CTestTestfile.cmake
+Testing/
+Makefile
+*.o
+*.obj
+*.a
+*.lib
+*.exe
+*.out
+
+# ESP-IDF Component Manager artifacts
+dist/
+managed_components/
+dependencies.lock
+tracker.log
+
+# Fuzzing & sanitizer artifacts
+crash-*
+leak-*
+timeout-*
+oom-*
+*.profraw
+*.profdata
+corpus/
+
+# Python / OS temporary files
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db

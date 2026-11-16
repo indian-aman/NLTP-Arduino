@@ -1,0 +1,307 @@
+{
+  "spdxVersion": "SPDX-2.3",
+  "dataLicense": "CC0-1.0",
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "name": "NLTP-Arduino-1.6.0",
+  "documentNamespace": "https://github.com/indian-aman/NLTP-Arduino/releases/tag/v1.6.0#spdx",
+  "creationInfo": {
+    "created": "2026-11-16T18:45:00Z",
+    "creators": [
+      "Person: Amandeep Singh Bains (indianaman1.10.97@gmail.com)",
+      "Tool: nltp-sbom-generator-1.6.0"
+    ],
+    "licenseListVersion": "3.25"
+  },
+  "packages": [
+    {
+      "name": "NLTP-Arduino",
+      "SPDXID": "SPDXRef-Package-NLTP-Arduino",
+      "versionInfo": "1.6.0",
+      "downloadLocation": "git+https://github.com/indian-aman/NLTP-Arduino.git@v1.6.0",
+      "filesAnalyzed": true,
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "6f6f53b41e829b6b3ee2efa0b81d726d05c2d85d"
+      },
+      "homepage": "https://indian-aman.github.io/necklink/nltp/",
+      "supplier": "Person: Amandeep Singh Bains (indianaman1.10.97@gmail.com)",
+      "originator": "Person: Amandeep Singh Bains (indianaman1.10.97@gmail.com)",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseInfoFromFiles": [
+        "MIT"
+      ],
+      "copyrightText": "Copyright (c) 2026 Amandeep Singh Bains",
+      "summary": "Loss-resilient X25519+PSK forward-secret ChaCha20-Poly1305 UDP & ESP-NOW v1/v2 transport in zero-float ANSI C99.",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:github/indian-aman/NLTP-Arduino@v1.6.0"
+        }
+      ],
+      "hasFiles": [
+        "SPDXRef-File-NLTP-h",
+        "SPDXRef-File-nltp_core-c",
+        "SPDXRef-File-nltp_core-h",
+        "SPDXRef-File-nltp_espnow-h",
+        "SPDXRef-File-nltp_net-c",
+        "SPDXRef-File-nltp_net-h",
+        "SPDXRef-File-nltp_sha256-c",
+        "SPDXRef-File-nltp_sha256-h",
+        "SPDXRef-File-nltp_wire-h"
+      ]
+    }
+  ],
+  "files": [
+    {
+      "SPDXID": "SPDXRef-File-NLTP-h",
+      "fileName": "./src/NLTP.h",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "d2b4d791ea46092ad675ecd9798016280cf9ca77"
+        },
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "53e796c5fc9dbc9332817bc7b65d0a7929611c5c6e5a55561a480b90c0136766"
+        }
+      ],
+      "licenseConcluded": "MIT",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "Copyright (c) 2026 Amandeep Singh Bains",
+      "fileTypes": [
+        "SOURCE"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-nltp_core-c",
+      "fileName": "./src/nltp_core.c",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "bb81a46893bcf029e23de0a2dae7ff4ffe91e595"
+        },
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "2aaea03d0add5917b3f6cfd15f0d63ab0607dfed0518b52d213862064191135c"
+        }
+      ],
+      "licenseConcluded": "MIT",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "Copyright (c) 2026 Amandeep Singh Bains",
+      "fileTypes": [
+        "SOURCE"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-nltp_core-h",
+      "fileName": "./src/nltp_core.h",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "5b721962c8902510f7788c5143cc616af923db33"
+        },
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "d56094bc7b16e0fa747d6562c95f55692961140a442afb6a4810b450f5fd8036"
+        }
+      ],
+      "licenseConcluded": "MIT",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "Copyright (c) 2026 Amandeep Singh Bains",
+      "fileTypes": [
+        "SOURCE"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-nltp_espnow-h",
+      "fileName": "./src/nltp_espnow.h",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "1f81851aa39da9555b1a948a2dfdc72025b7b7e4"
+        },
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "a87a0305eb96497e89ef0b764284bb8d71ca1082d5131265ccb9000d1dd8d6c7"
+        }
+      ],
+      "licenseConcluded": "MIT",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "Copyright (c) 2026 Amandeep Singh Bains",
+      "fileTypes": [
+        "SOURCE"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-nltp_net-c",
+      "fileName": "./src/nltp_net.c",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "b3b4f735b3ab91ee767222834e33691757d48fb3"
+        },
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "7ec312c58a60fa807aca2570c53be1585bcd9843a19d08e2898e1ab03fde9b11"
+        }
+      ],
+      "licenseConcluded": "MIT",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "Copyright (c) 2026 Amandeep Singh Bains",
+      "fileTypes": [
+        "SOURCE"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-nltp_net-h",
+      "fileName": "./src/nltp_net.h",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "f79f1312ad1a628b8ea33fd5c5967ef1a16b03f2"
+        },
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "18392f36190a28f1bfc440104ae4a98dc50ab470367b0e96df265681bedc8429"
+        }
+      ],
+      "licenseConcluded": "MIT",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "Copyright (c) 2026 Amandeep Singh Bains",
+      "fileTypes": [
+        "SOURCE"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-nltp_sha256-c",
+      "fileName": "./src/nltp_sha256.c",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "a01d2156ca1a10f1287908c3044ed3239686d66e"
+        },
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "22b6814bdd23d31e7b039ae8ea66771ab22011f899bec06d12151fa074dae070"
+        }
+      ],
+      "licenseConcluded": "MIT",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "Copyright (c) 2026 Amandeep Singh Bains",
+      "fileTypes": [
+        "SOURCE"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-nltp_sha256-h",
+      "fileName": "./src/nltp_sha256.h",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "166e47595fa6855f11a71e39456144596f325a02"
+        },
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "43871c3fee8b0b8b42a057550db76882cfd8be8f92c36cf20f849921db443579"
+        }
+      ],
+      "licenseConcluded": "MIT",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "Copyright (c) 2026 Amandeep Singh Bains",
+      "fileTypes": [
+        "SOURCE"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-nltp_wire-h",
+      "fileName": "./src/nltp_wire.h",
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "c1a6d622a5d2b912167028f54a9eaeea5e0281f4"
+        },
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "af13ea88e7c8d24883a7924b4b5583413959472621698def595d413d1cca092a"
+        }
+      ],
+      "licenseConcluded": "MIT",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ],
+      "copyrightText": "Copyright (c) 2026 Amandeep Singh Bains",
+      "fileTypes": [
+        "SOURCE"
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-NLTP-Arduino"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-NLTP-Arduino",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-NLTP-h"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-NLTP-Arduino",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-nltp_core-c"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-NLTP-Arduino",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-nltp_core-h"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-NLTP-Arduino",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-nltp_espnow-h"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-NLTP-Arduino",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-nltp_net-c"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-NLTP-Arduino",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-nltp_net-h"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-NLTP-Arduino",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-nltp_sha256-c"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-NLTP-Arduino",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-nltp_sha256-h"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-NLTP-Arduino",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-File-nltp_wire-h"
+    }
+  ]
+}

@@ -19,12 +19,13 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/indian-aman/necklink.git",
+    "url": "https://github.com/indian-aman/NLTP-Arduino.git",
     "branch": "main"
   },
   "authors": [
     {
       "name": "Amandeep Singh Bains",
+      "email": "indianaman1.10.97@gmail.com",
       "url": "https://github.com/indian-aman",
       "maintainer": true
     }
@@ -47,10 +48,13 @@
     "include": [
       "src/*",
       "examples/*",
+      "CMakeLists.txt",
+      "idf_component.yml",
       "library.properties",
       "library.json",
       "keywords.txt",
       "README.md",
+      "SECURITY.md",
       "LICENSE"
     ]
   }

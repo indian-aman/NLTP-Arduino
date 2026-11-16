@@ -1,0 +1,24 @@
+version: "1.6.0"
+description: "Loss-resilient X25519+PSK forward-secret ChaCha20-Poly1305 UDP & ESP-NOW v1/v2 transport with GF(2^8) Cauchy FEC, zero-dependency LZ4 compression, confirmed 0ms HOL reflex channel, and 4.76 KB TX-only MCU profile in pure ANSI C99."
+url: "https://indian-aman.github.io/necklink/nltp/"
+repository: "https://github.com/indian-aman/NLTP-Arduino.git"
+issues: "https://github.com/indian-aman/NLTP-Arduino/issues"
+license: "MIT"
+targets:
+  - esp32
+  - esp32s2
+  - esp32s3
+  - esp32c2
+  - esp32c3
+  - esp32c5
+  - esp32c6
+  - esp32h2
+  - esp32p4
+dependencies:
+  idf: ">=5.0.0"
+files:
+  exclude:
+    - ".github/**/*"
+    - "spec/**/*"
+    - "fuzz/**/*"
+    - "docs/**/*"

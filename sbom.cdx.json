@@ -1,0 +1,276 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "serialNumber": "urn:uuid:7f4e9b2a-1c60-4d91-9e16-202611160160",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-11-16T18:45:00Z",
+    "tools": [
+      {
+        "vendor": "NeckLink Project",
+        "name": "nltp-sbom-generator",
+        "version": "1.6.0"
+      }
+    ],
+    "authors": [
+      {
+        "name": "Amandeep Singh Bains",
+        "email": "indianaman1.10.97@gmail.com"
+      }
+    ],
+    "component": {
+      "type": "library",
+      "bom-ref": "pkg:github/indian-aman/NLTP-Arduino@v1.6.0",
+      "name": "NLTP-Arduino",
+      "version": "1.6.0",
+      "description": "Loss-resilient X25519+PSK forward-secret ChaCha20-Poly1305 UDP & ESP-NOW v1/v2 transport with GF(2^8) Cauchy FEC, zero-heap LZ4 compression, and 4.76 KB TX-only MCU profile in pure ANSI C99.",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:github/indian-aman/NLTP-Arduino@v1.6.0",
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://indian-aman.github.io/necklink/nltp/"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/indian-aman/NLTP-Arduino.git"
+        },
+        {
+          "type": "issue-tracker",
+          "url": "https://github.com/indian-aman/NLTP-Arduino/issues"
+        }
+      ]
+    }
+  },
+  "components": [
+    {
+      "type": "file",
+      "bom-ref": "src/NLTP.h",
+      "name": "src/NLTP.h",
+      "version": "1.6.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "53e796c5fc9dbc9332817bc7b65d0a7929611c5c6e5a55561a480b90c0136766"
+        },
+        {
+          "alg": "SHA-1",
+          "content": "d2b4d791ea46092ad675ecd9798016280cf9ca77"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "src/nltp_core.c",
+      "name": "src/nltp_core.c",
+      "version": "1.6.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "2aaea03d0add5917b3f6cfd15f0d63ab0607dfed0518b52d213862064191135c"
+        },
+        {
+          "alg": "SHA-1",
+          "content": "bb81a46893bcf029e23de0a2dae7ff4ffe91e595"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "src/nltp_core.h",
+      "name": "src/nltp_core.h",
+      "version": "1.6.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "d56094bc7b16e0fa747d6562c95f55692961140a442afb6a4810b450f5fd8036"
+        },
+        {
+          "alg": "SHA-1",
+          "content": "5b721962c8902510f7788c5143cc616af923db33"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "src/nltp_espnow.h",
+      "name": "src/nltp_espnow.h",
+      "version": "1.6.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "a87a0305eb96497e89ef0b764284bb8d71ca1082d5131265ccb9000d1dd8d6c7"
+        },
+        {
+          "alg": "SHA-1",
+          "content": "1f81851aa39da9555b1a948a2dfdc72025b7b7e4"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "src/nltp_net.c",
+      "name": "src/nltp_net.c",
+      "version": "1.6.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "7ec312c58a60fa807aca2570c53be1585bcd9843a19d08e2898e1ab03fde9b11"
+        },
+        {
+          "alg": "SHA-1",
+          "content": "b3b4f735b3ab91ee767222834e33691757d48fb3"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "src/nltp_net.h",
+      "name": "src/nltp_net.h",
+      "version": "1.6.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "18392f36190a28f1bfc440104ae4a98dc50ab470367b0e96df265681bedc8429"
+        },
+        {
+          "alg": "SHA-1",
+          "content": "f79f1312ad1a628b8ea33fd5c5967ef1a16b03f2"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "src/nltp_sha256.c",
+      "name": "src/nltp_sha256.c",
+      "version": "1.6.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "22b6814bdd23d31e7b039ae8ea66771ab22011f899bec06d12151fa074dae070"
+        },
+        {
+          "alg": "SHA-1",
+          "content": "a01d2156ca1a10f1287908c3044ed3239686d66e"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "src/nltp_sha256.h",
+      "name": "src/nltp_sha256.h",
+      "version": "1.6.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "43871c3fee8b0b8b42a057550db76882cfd8be8f92c36cf20f849921db443579"
+        },
+        {
+          "alg": "SHA-1",
+          "content": "166e47595fa6855f11a71e39456144596f325a02"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "src/nltp_wire.h",
+      "name": "src/nltp_wire.h",
+      "version": "1.6.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "af13ea88e7c8d24883a7924b4b5583413959472621698def595d413d1cca092a"
+        },
+        {
+          "alg": "SHA-1",
+          "content": "c1a6d622a5d2b912167028f54a9eaeea5e0281f4"
+        }
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "pkg:github/indian-aman/NLTP-Arduino@v1.6.0",
+      "dependsOn": [
+        "src/NLTP.h",
+        "src/nltp_core.c",
+        "src/nltp_core.h",
+        "src/nltp_espnow.h",
+        "src/nltp_net.c",
+        "src/nltp_net.h",
+        "src/nltp_sha256.c",
+        "src/nltp_sha256.h",
+        "src/nltp_wire.h"
+      ]
+    }
+  ]
+}
