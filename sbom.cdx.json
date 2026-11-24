@@ -1,15 +1,15 @@
 {
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
-  "serialNumber": "urn:uuid:7f4e9b2a-1c60-4d91-9e16-202611160160",
+  "serialNumber": "urn:uuid:7f4e9b2a-1c60-4d91-9e16-202611240161",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-11-16T18:45:00Z",
+    "timestamp": "2026-11-24T10:15:00Z",
     "tools": [
       {
         "vendor": "NeckLink Project",
         "name": "nltp-sbom-generator",
-        "version": "1.6.0"
+        "version": "1.6.1"
       }
     ],
     "authors": [
@@ -20,9 +20,9 @@
     ],
     "component": {
       "type": "library",
-      "bom-ref": "pkg:github/indian-aman/NLTP-Arduino@v1.6.0",
+      "bom-ref": "pkg:github/indian-aman/NLTP-Arduino@v1.6.1",
       "name": "NLTP-Arduino",
-      "version": "1.6.0",
+      "version": "1.6.1",
       "description": "Loss-resilient X25519+PSK forward-secret ChaCha20-Poly1305 UDP & ESP-NOW v1/v2 transport with GF(2^8) Cauchy FEC, zero-heap LZ4 compression, and 4.76 KB TX-only MCU profile in pure ANSI C99.",
       "licenses": [
         {
@@ -31,7 +31,7 @@
           }
         }
       ],
-      "purl": "pkg:github/indian-aman/NLTP-Arduino@v1.6.0",
+      "purl": "pkg:github/indian-aman/NLTP-Arduino@v1.6.1",
       "externalReferences": [
         {
           "type": "website",
@@ -53,7 +53,7 @@
       "type": "file",
       "bom-ref": "src/NLTP.h",
       "name": "src/NLTP.h",
-      "version": "1.6.0",
+      "version": "1.6.1",
       "licenses": [
         {
           "license": {
@@ -64,11 +64,11 @@
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "53e796c5fc9dbc9332817bc7b65d0a7929611c5c6e5a55561a480b90c0136766"
+          "content": "bebc6428f1a51d3fe4f1914d4fe59ff1fa28c0f927c9cdd18cf01e2b9325b4ae"
         },
         {
           "alg": "SHA-1",
-          "content": "d2b4d791ea46092ad675ecd9798016280cf9ca77"
+          "content": "dc6cc9dc8879b9a15673c2746495887c035fdeb0"
         }
       ]
     },
@@ -76,7 +76,7 @@
       "type": "file",
       "bom-ref": "src/nltp_core.c",
       "name": "src/nltp_core.c",
-      "version": "1.6.0",
+      "version": "1.6.1",
       "licenses": [
         {
           "license": {
@@ -87,11 +87,11 @@
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "2aaea03d0add5917b3f6cfd15f0d63ab0607dfed0518b52d213862064191135c"
+          "content": "f4ec45b4fd507d8db5bf8b099fb79e770c4ed1662018093e2339639cdce84411"
         },
         {
           "alg": "SHA-1",
-          "content": "bb81a46893bcf029e23de0a2dae7ff4ffe91e595"
+          "content": "bb041dc82a5baf0cc0763dfe1ed7abd57fe330b1"
         }
       ]
     },
@@ -99,7 +99,7 @@
       "type": "file",
       "bom-ref": "src/nltp_core.h",
       "name": "src/nltp_core.h",
-      "version": "1.6.0",
+      "version": "1.6.1",
       "licenses": [
         {
           "license": {
@@ -122,7 +122,7 @@
       "type": "file",
       "bom-ref": "src/nltp_espnow.h",
       "name": "src/nltp_espnow.h",
-      "version": "1.6.0",
+      "version": "1.6.1",
       "licenses": [
         {
           "license": {
@@ -145,7 +145,7 @@
       "type": "file",
       "bom-ref": "src/nltp_net.c",
       "name": "src/nltp_net.c",
-      "version": "1.6.0",
+      "version": "1.6.1",
       "licenses": [
         {
           "license": {
@@ -168,7 +168,7 @@
       "type": "file",
       "bom-ref": "src/nltp_net.h",
       "name": "src/nltp_net.h",
-      "version": "1.6.0",
+      "version": "1.6.1",
       "licenses": [
         {
           "license": {
@@ -191,7 +191,7 @@
       "type": "file",
       "bom-ref": "src/nltp_sha256.c",
       "name": "src/nltp_sha256.c",
-      "version": "1.6.0",
+      "version": "1.6.1",
       "licenses": [
         {
           "license": {
@@ -214,7 +214,7 @@
       "type": "file",
       "bom-ref": "src/nltp_sha256.h",
       "name": "src/nltp_sha256.h",
-      "version": "1.6.0",
+      "version": "1.6.1",
       "licenses": [
         {
           "license": {
@@ -237,7 +237,7 @@
       "type": "file",
       "bom-ref": "src/nltp_wire.h",
       "name": "src/nltp_wire.h",
-      "version": "1.6.0",
+      "version": "1.6.1",
       "licenses": [
         {
           "license": {
@@ -248,11 +248,11 @@
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "af13ea88e7c8d24883a7924b4b5583413959472621698def595d413d1cca092a"
+          "content": "709cc7d7485b820addf3a32bc70dd112334015269f750de9be8207f0c6f444ec"
         },
         {
           "alg": "SHA-1",
-          "content": "c1a6d622a5d2b912167028f54a9eaeea5e0281f4"
+          "content": "68b5558c694629a046f3db6ab1f760b54164e73a"
         }
       ]
     }

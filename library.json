@@ -1,6 +1,6 @@
 {
   "name": "NLTP",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "Loss-resilient X25519+PSK forward-secret ChaCha20-Poly1305 UDP & ESP-NOW v1/v2 transport with GF(2^8) Cauchy FEC, built-in zero-dependency LZ4 compression, confirmed 0ms HOL reflex commands, and 4.76 KB TX-only MCU sensor profile in zero-float C99.",
   "keywords": [
     "nltp",

@@ -205,7 +205,7 @@ jobs:
       - name: Package Release Bundle
         run: |
           mkdir -p dist
-          tar -czf dist/nltp-c99-v1.6.0.tar.gz \
+          tar -czf dist/nltp-c99-v1.6.1.tar.gz \
               src examples CMakeLists.txt idf_component.yml \
               library.json library.properties keywords.txt \
               README.md SECURITY.md CONTRIBUTING.md LICENSE \
@@ -215,9 +215,9 @@ jobs:
       - name: Upload Release & SBOM Artifacts
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: nltp-v1.6.0-sbom-bundle
+          name: nltp-v1.6.1-sbom-bundle
           path: |
-            dist/nltp-c99-v1.6.0.tar.gz
+            dist/nltp-c99-v1.6.1.tar.gz
             sbom.spdx.json
             sbom.cdx.json
           retention-days: 30
@@ -227,6 +227,6 @@ jobs:
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: |
-            dist/nltp-c99-v1.6.0.tar.gz
+            dist/nltp-c99-v1.6.1.tar.gz
             sbom.spdx.json
             sbom.cdx.json

@@ -1,4 +1,4 @@
-# NLTP v1.6.0 — Zero-Malloc ANSI C99, Arduino, PlatformIO & ESP-IDF Wireless Transport
+# NLTP v1.6.1 — Zero-Malloc ANSI C99, Arduino, PlatformIO & ESP-IDF Wireless Transport
 
 [![Tier-1 Compliance CI](https://github.com/indian-aman/NLTP-Arduino/actions/workflows/tier1-compliance.yml/badge.svg)](https://github.com/indian-aman/NLTP-Arduino/actions/workflows/tier1-compliance.yml)
 [![CodeQL C99 SAST](https://github.com/indian-aman/NLTP-Arduino/actions/workflows/codeql.yml/badge.svg)](https://github.com/indian-aman/NLTP-Arduino/actions/workflows/codeql.yml)
@@ -19,7 +19,7 @@
 
 Standard embedded transports break down when wireless links drop `10–35%` of packets through concrete walls, basements, warehouses, or outdoor RF interference:
 
-| Constraint on Noisy RF (`15–35%` Loss) | Raw `ESP-NOW` | `MQTT` / `HTTP` over `TCP` | **`NLTP v1.6.0` (`C99` / `Arduino` / `ESP-IDF`)** |
+| Constraint on Noisy RF (`15–35%` Loss) | Raw `ESP-NOW` | `MQTT` / `HTTP` over `TCP` | **`NLTP v1.6.1` (`C99` / `Arduino` / `ESP-IDF`)** |
 | :--- | :---: | :---: | :---: |
 | **Multi-KB Payload Delivery (`8–64 KB`)** | Drops whole payload if 1 chunk is lost (`250 B` v1 / `1,470 B` v2 limit) | Stalls for seconds on exponential TCP RTO backoff | **`100%` SHA-256 verified** — `GF(2^8)` Cauchy FEC heals lost shards in flight |
 | **Peer Encryption Limit** | Capped at `6–17` hardware LMK peers (`ESP_ERR_ESPNOW_FULL`) | Heavy `mbedTLS` / TLS `40+ KB` heap per socket | **Unlimited peers in software** — `1`-RTT `X25519 + PSK` PFS + `ChaCha20-Poly1305` |
@@ -64,14 +64,14 @@ arduino-cli lib install "NLTP"
 ### 2. PlatformIO (`platformio.ini`)
 ```ini
 lib_deps =
-    indian-aman/NLTP@^1.6.0
+    indian-aman/NLTP@^1.6.1
 ; Optional for 80 KB ESP8266 / small Cortex-M sensors (4,760 B static RAM):
 build_flags = -DNLTP_TX_ONLY=1
 ```
 
 ### 3. Official Espressif ESP-IDF Component Manager (`v5.0+`, All 9 ESP32 Targets)
 ```bash
-idf.py add-dependency "indian-aman/nltp^1.6.0"
+idf.py add-dependency "indian-aman/nltp^1.6.1"
 ```
 
 ### 4. Standalone CMake (`Linux` / `macOS` / `Windows` / Bare-Metal C99)
@@ -155,6 +155,7 @@ Tested over live Channel 11 2.4 GHz RF (`wifi_sta=0`, `ip=0.0.0.0`):
 | **Simultaneous Full-Duplex Stress** (`32 KB A->B` + `32 KB B->A`) | `64 KB` total @ `10%` loss | `0 / 5` | **`5 / 5` (`100%` SHA-256, `3.05 Mbps`)** |
 | **Adversarial Frame Injection** (`Spoofed MAC / Replay / Bit-Flip`) | `160` attack frames | Accepted spoofed frames | **`160 / 160` rejected pre-FEC** (`0` hub slots allocated) |
 | **`50 x 8 KB` Soak + Deep-Sleep Cold Wake** | `400 KB` + `20` cold wakes | — | **`50 / 50` verified (`0 B` RX heap delta, `4.34 ms` median wake)** |
+| **`ESP8266EX @ 160 MHz` Live Wi-Fi UDP + `4 KB`-Stack CNS** | `560–1,114 B` @ `15%–20%` drop | — | **`4 / 4` (`100%` SHA-256)** (`209.9 ms` transfer, **`4.8 ms`** encrypted Reflex ACK, `439.3 ms` RFC-7748 `X25519` in `1,520 B` stack) |
 
 *(Note: On a `0%`-loss clean bench link, unencrypted raw ESP-NOW v2 reaches `15.0 Mbps` median vs. `7.1 Mbps` median for encrypted NLTP; NLTP is designed for links where dropped frames, multi-KB payloads, encryption, or CGNAT break raw datagrams and stall TCP.)*
 
@@ -167,7 +168,7 @@ Every push runs strict C99 static analysis, memory sanitizers, adversarial fuzzi
 | Assurance Gate | Verification Scope |
 | :--- | :--- |
 | **IETF Internet-Draft** | [`datatracker.ietf.org/doc/draft-bains-nltp/`](https://datatracker.ietf.org/doc/draft-bains-nltp/) ([TXT](spec/draft-bains-nltp-00.txt) · [XML](spec/draft-bains-nltp-00.xml)) — active 15-page IETF specification of `"NL"` wire frames, `X25519` handshake, `GF(2^8)` Cauchy FEC, and `LZ4` |
-| **NIST & IETF Cryptographic KATs** | [`tests/test_kat_vectors.c`](tests/test_kat_vectors.c) — **`1,668 / 1,668` checks** against **RFC 7748** (`X25519` + all 7 low-order curve points), **RFC 8439** (`ChaCha20-Poly1305`), **RFC 4231** (`HMAC-SHA256`), **NIST FIPS 180-4** (`SHA-256`), **RFC 6479** (`512`-bit anti-replay), and `4,760 B` footprint gate (`docker run --rm ghcr.io/indian-aman/nltp-kat:v1.6.0`) |
+| **NIST & IETF Cryptographic KATs** | [`tests/test_kat_vectors.c`](tests/test_kat_vectors.c) — **`1,668 / 1,668` checks** against **RFC 7748** (`X25519` + all 7 low-order curve points), **RFC 8439** (`ChaCha20-Poly1305`), **RFC 4231** (`HMAC-SHA256`), **NIST FIPS 180-4** (`SHA-256`), **RFC 6479** (`512`-bit anti-replay), and `4,760 B` footprint gate (`docker run --rm ghcr.io/indian-aman/nltp-kat:v1.6.1`) |
 | **Continuous `libFuzzer` + `CodeQL`** | [`fuzz/fuzz_nltp_rx.c`](fuzz/fuzz_nltp_rx.c) — **`500,000` mutated frames per CI push** under `clang -fsanitize=fuzzer,address,undefined` + GitHub `CodeQL` C99 `security-extended` SAST |
 | **MISRA C:2012 Audit** | [`docs/MISRA_C_2012_COMPLIANCE.md`](docs/MISRA_C_2012_COMPLIANCE.md) — `-std=c99 -Wall -Wextra -Wpedantic -Werror -DNLTP_NO_MALLOC`, `0` dynamic allocations, `0` floats, `0` recursion, automated `cppcheck --addon=misra` |
 | **OpenSSF & Supply-Chain Provenance** | [OpenSSF Best Practices Passing (`#16811`)](https://www.bestpractices.dev/en/projects/16811), [OpenSSF Scorecard (`8.1/10`)](https://scorecard.dev/viewer/?uri=github.com/indian-aman/NLTP-Arduino), [`sbom.spdx.json`](sbom.spdx.json) (SPDX 2.3), [`sbom.cdx.json`](sbom.cdx.json) (CycloneDX 1.5), and Sigstore `.intoto.jsonl` SLSA Build Provenance |

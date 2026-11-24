@@ -2,13 +2,13 @@
   "spdxVersion": "SPDX-2.3",
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
-  "name": "NLTP-Arduino-1.6.0",
-  "documentNamespace": "https://github.com/indian-aman/NLTP-Arduino/releases/tag/v1.6.0#spdx",
+  "name": "NLTP-Arduino-1.6.1",
+  "documentNamespace": "https://github.com/indian-aman/NLTP-Arduino/releases/tag/v1.6.1#spdx",
   "creationInfo": {
-    "created": "2026-11-16T18:45:00Z",
+    "created": "2026-11-24T10:15:00Z",
     "creators": [
       "Person: Amandeep Singh Bains (indianaman1.10.97@gmail.com)",
-      "Tool: nltp-sbom-generator-1.6.0"
+      "Tool: nltp-sbom-generator-1.6.1"
     ],
     "licenseListVersion": "3.25"
   },
@@ -16,11 +16,11 @@
     {
       "name": "NLTP-Arduino",
       "SPDXID": "SPDXRef-Package-NLTP-Arduino",
-      "versionInfo": "1.6.0",
-      "downloadLocation": "git+https://github.com/indian-aman/NLTP-Arduino.git@v1.6.0",
+      "versionInfo": "1.6.1",
+      "downloadLocation": "git+https://github.com/indian-aman/NLTP-Arduino.git@v1.6.1",
       "filesAnalyzed": true,
       "packageVerificationCode": {
-        "packageVerificationCodeValue": "6f6f53b41e829b6b3ee2efa0b81d726d05c2d85d"
+        "packageVerificationCodeValue": "5fa3f00bd2c01a51b6e2559b628aec8f6917f840"
       },
       "homepage": "https://indian-aman.github.io/necklink/nltp/",
       "supplier": "Person: Amandeep Singh Bains (indianaman1.10.97@gmail.com)",
@@ -36,7 +36,7 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:github/indian-aman/NLTP-Arduino@v1.6.0"
+          "referenceLocator": "pkg:github/indian-aman/NLTP-Arduino@v1.6.1"
         }
       ],
       "hasFiles": [
@@ -59,11 +59,11 @@
       "checksums": [
         {
           "algorithm": "SHA1",
-          "checksumValue": "d2b4d791ea46092ad675ecd9798016280cf9ca77"
+          "checksumValue": "dc6cc9dc8879b9a15673c2746495887c035fdeb0"
         },
         {
           "algorithm": "SHA256",
-          "checksumValue": "53e796c5fc9dbc9332817bc7b65d0a7929611c5c6e5a55561a480b90c0136766"
+          "checksumValue": "bebc6428f1a51d3fe4f1914d4fe59ff1fa28c0f927c9cdd18cf01e2b9325b4ae"
         }
       ],
       "licenseConcluded": "MIT",
@@ -81,11 +81,11 @@
       "checksums": [
         {
           "algorithm": "SHA1",
-          "checksumValue": "bb81a46893bcf029e23de0a2dae7ff4ffe91e595"
+          "checksumValue": "bb041dc82a5baf0cc0763dfe1ed7abd57fe330b1"
         },
         {
           "algorithm": "SHA256",
-          "checksumValue": "2aaea03d0add5917b3f6cfd15f0d63ab0607dfed0518b52d213862064191135c"
+          "checksumValue": "f4ec45b4fd507d8db5bf8b099fb79e770c4ed1662018093e2339639cdce84411"
         }
       ],
       "licenseConcluded": "MIT",
@@ -235,11 +235,11 @@
       "checksums": [
         {
           "algorithm": "SHA1",
-          "checksumValue": "c1a6d622a5d2b912167028f54a9eaeea5e0281f4"
+          "checksumValue": "68b5558c694629a046f3db6ab1f760b54164e73a"
         },
         {
           "algorithm": "SHA256",
-          "checksumValue": "af13ea88e7c8d24883a7924b4b5583413959472621698def595d413d1cca092a"
+          "checksumValue": "709cc7d7485b820addf3a32bc70dd112334015269f750de9be8207f0c6f444ec"
         }
       ],
       "licenseConcluded": "MIT",

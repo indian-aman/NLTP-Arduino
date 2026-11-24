@@ -1,4 +1,4 @@
-version: "1.6.0"
+version: "1.6.1"
 description: "Loss-resilient X25519+PSK forward-secret ChaCha20-Poly1305 UDP & ESP-NOW v1/v2 transport with GF(2^8) Cauchy FEC, zero-dependency LZ4 compression, confirmed 0ms HOL reflex channel, and 4.76 KB TX-only MCU profile in pure ANSI C99."
 url: "https://indian-aman.github.io/necklink/nltp/"
 repository: "https://github.com/indian-aman/NLTP-Arduino.git"
